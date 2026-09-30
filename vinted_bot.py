@@ -373,4 +373,5 @@ async def cmd_unblacklist(ctx, *, mot: str):
         await ctx.send(f"⚠️ **`{mot}`** n'est pas dans la blacklist.")
 
 if __name__ == "__main__":
+    print(f"Token chargé : {DISCORD_TOKEN[:10] if DISCORD_TOKEN else 'VIDE'}")
     bot.run(DISCORD_TOKEN)
