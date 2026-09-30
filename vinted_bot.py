@@ -17,13 +17,12 @@ CHECK_INTERVAL = 10   # secondes entre chaque scan
 
 # Mots-clés à surveiller
 SEARCH_QUERIES = [
-
-    "ralph lauren",
-    "lacoste",
-    "tommy hilfiger",
-    "carhartt",
-    "nike vintage",
-    "adidas vintage",
+    "lot ralph lauren",
+    "lot lacoste",
+    "lot tommy hilfiger",
+    "lot carhartt",
+    "lot nike vintage",
+    "lot adidas vintage",
 ]
 
 PRICE_MIN = 3
@@ -84,20 +83,47 @@ def is_blacklisted(title: str) -> tuple[bool, str]:
 
 VINTED_BASE = "https://www.vinted.fr"
 VINTED_API  = "https://www.vinted.fr/api/v2"
-HEADERS = {
-    "User-Agent"     : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-    "Accept"         : "application/json, text/plain, */*",
-    "Accept-Language": "fr-FR,fr;q=0.9",
-    "Referer"        : "https://www.vinted.fr/",
-    "Origin"         : "https://www.vinted.fr",
-}
+
+# User agents rotatifs pour éviter le blocage
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+]
+
+def get_headers():
+    return {
+        "User-Agent"     : random.choice(USER_AGENTS),
+        "Accept"         : "application/json, text/plain, */*",
+        "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer"        : "https://www.vinted.fr/",
+        "Origin"         : "https://www.vinted.fr",
+        "sec-ch-ua"      : '"Chromium";v="124", "Google Chrome";v="124"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-fetch-dest" : "empty",
+        "sec-fetch-mode" : "cors",
+        "sec-fetch-site" : "same-origin",
+    }
 
 async def get_cookie(session: aiohttp.ClientSession):
+    """Récupère un cookie de session Vinted valide."""
     try:
-        async with session.get(VINTED_BASE, headers=HEADERS) as r:
-            session.cookie_jar.filter_cookies(URL(VINTED_BASE))
+        headers = get_headers()
+        async with session.get(VINTED_BASE, headers=headers, allow_redirects=True) as r:
+            print(f"[Cookie] Page principale → HTTP {r.status}")
+            await asyncio.sleep(1)
+        # Visite une page catalogue pour récupérer les bons cookies
+        async with session.get(
+            f"{VINTED_BASE}/vetements-pour-hommes",
+            headers=get_headers(),
+            allow_redirects=True
+        ) as r:
+            print(f"[Cookie] Page catalogue → HTTP {r.status}")
     except Exception as e:
-        print(f"[Cookie] {e}")
+        print(f"[Cookie] Erreur : {e}")
 
 async def search_vinted(session: aiohttp.ClientSession, query: str,
                         price_min=None, price_max=None, per_page=20) -> list:
@@ -110,17 +136,25 @@ async def search_vinted(session: aiohttp.ClientSession, query: str,
     if price_min is not None: params["price_from"] = price_min
     if price_max is not None: params["price_to"]   = price_max
     try:
+        headers = get_headers()
         async with session.get(
             f"{VINTED_API}/catalog/items",
             params=params,
-            headers=HEADERS,
+            headers=headers,
             timeout=aiohttp.ClientTimeout(total=15)
         ) as r:
+            print(f"[Vinted] '{query}' → HTTP {r.status}")
             if r.status == 200:
                 data = await r.json()
                 items = data.get("items", [])
                 print(f"[Vinted] '{query}' → {len(items)} articles")
                 return items
+            elif r.status == 401:
+                print(f"[Vinted] Token invalide — renouvellement cookie...")
+                await get_cookie(session)
+            else:
+                text = await r.text()
+                print(f"[Vinted] Réponse inattendue : {text[:200]}")
             return []
     except Exception as e:
         print(f"[Search '{query}'] {e}")
