@@ -17,12 +17,12 @@ CHECK_INTERVAL = 10   # secondes entre chaque scan
 
 # Mots-clés à surveiller
 SEARCH_QUERIES = [
-    "lot ralph lauren",
-    "lot lacoste",
-    "lot tommy hilfiger",
-    "lot carhartt",
-    "lot nike vintage",
-    "lot adidas vintage",
+    "ralph lauren",
+    "lacoste",
+    "tommy hilfiger",
+    "carhartt",
+    "nike vintage",
+    "adidas vintage",
 ]
 
 PRICE_MIN = 3
@@ -83,6 +83,7 @@ def is_blacklisted(title: str) -> tuple[bool, str]:
 
 VINTED_BASE = "https://www.vinted.fr"
 VINTED_API  = "https://www.vinted.fr/api/v2"
+VINTED_API_V1 = "https://www.vinted.fr/api/v1"
 
 # User agents rotatifs pour éviter le blocage
 USER_AGENTS = [
@@ -117,7 +118,7 @@ async def get_cookie(session: aiohttp.ClientSession):
             await asyncio.sleep(1)
         # Visite une page catalogue pour récupérer les bons cookies
         async with session.get(
-            f"{VINTED_BASE}/vetements-pour-hommes",
+            f"{VINTED_BASE}/catalog",
             headers=get_headers(),
             allow_redirects=True
         ) as r:
@@ -137,25 +138,29 @@ async def search_vinted(session: aiohttp.ClientSession, query: str,
     if price_max is not None: params["price_to"]   = price_max
     try:
         headers = get_headers()
-        async with session.get(
+        # Essaye les deux versions de l'API
+        for api_url in [
             f"{VINTED_API}/catalog/items",
-            params=params,
-            headers=headers,
-            timeout=aiohttp.ClientTimeout(total=15)
-        ) as r:
-            print(f"[Vinted] '{query}' → HTTP {r.status}")
-            if r.status == 200:
-                data = await r.json()
-                items = data.get("items", [])
-                print(f"[Vinted] '{query}' → {len(items)} articles")
-                return items
-            elif r.status == 401:
-                print(f"[Vinted] Token invalide — renouvellement cookie...")
-                await get_cookie(session)
-            else:
-                text = await r.text()
-                print(f"[Vinted] Réponse inattendue : {text[:200]}")
-            return []
+            f"{VINTED_BASE}/api/v2/items",
+            f"{VINTED_BASE}/api/v1/catalog/items",
+        ]:
+            async with session.get(
+                api_url,
+                params=params,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as r:
+                print(f"[Vinted] '{query}' → {api_url.split('/')[-2:]} HTTP {r.status}")
+                if r.status == 200:
+                    data = await r.json()
+                    items = data.get("items", [])
+                    print(f"[Vinted] '{query}' → {len(items)} articles")
+                    return items
+                elif r.status == 401:
+                    print(f"[Vinted] Token invalide — renouvellement cookie...")
+                    await get_cookie(session)
+                    break
+        return []
     except Exception as e:
         print(f"[Search '{query}'] {e}")
         return []
