@@ -11,8 +11,9 @@ from yarl import URL
 # ============================================================
 # CONFIGURATION
 # ============================================================
-DISCORD_TOKEN  = "MTUwNDU3OTU3NzMwNDA1OTkyNA.GVp9rb.q-e22QSGw5V26OXRa4YtgpEF9-qTjWJfucWs7E"
-CHANNEL_ID     = 1504584240451551432
+
+DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
+CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0"))
 CHECK_INTERVAL = 60   # secondes entre chaque scan
 
 # Mots-clés à surveiller
