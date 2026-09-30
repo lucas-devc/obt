@@ -26,8 +26,8 @@ SEARCH_QUERIES = [
     "adidas vintage",
 ]
 
-PRICE_MIN = 8
-PRICE_MAX = 60
+PRICE_MIN = 3
+PRICE_MAX = 15
 
 # Mots interdits — annonces ignorées si contiennent un de ces mots
 BLACKLIST = [
