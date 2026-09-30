@@ -11,7 +11,7 @@ from yarl import URL
 # ============================================================
 # CONFIGURATION
 # ============================================================
-DISCORD_TOKEN  = "TON_NOUVEAU_TOKEN_ICI"
+DISCORD_TOKEN  = "MTUwNDU3OTU3NzMwNDA1OTkyNA.GVp9rb.q-e22QSGw5V26OXRa4YtgpEF9-qTjWJfucWs7E"
 CHANNEL_ID     = 1504584240451551432
 CHECK_INTERVAL = 60   # secondes entre chaque scan
 
