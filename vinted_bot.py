@@ -14,48 +14,21 @@ from yarl import URL
 
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0"))
-CHECK_INTERVAL = 60   # secondes entre chaque scan
+CHECK_INTERVAL = 10   # secondes entre chaque scan
 
 # Mots-clés à surveiller
 SEARCH_QUERIES = [
-    # Lots generiques — meilleures affaires
-    "lot vetements homme",
-    "lot vetements femme",
-    "lot vetements mixte",
-    "lot vetements marque",
-    "lot vetements vintage",
-    "lot fringues",
-    "vide dressing",
-    "vide dressing marque",
     # Lots par marque — pepites
-    "lot ralph lauren",
-    "lot lacoste",
-    "lot tommy hilfiger",
-    "lot carhartt",
-    "lot levis",
-    "lot nike vintage",
-    "lot adidas vintage",
-    "lot fred perry",
-    # Lots par type
-    "lot polos marque",
-    "lot pulls marque",
-    "lot chemises marque",
-    "lot sweats marque",
-    "lot vestes marque",
-    "lot jeans marque",
-    # Lots hype / streetwear
-    "lot supreme",
-    "lot stone island",
-    "lot streetwear",
-    "lot vintage marque",
-    # Lots taille specifique
-    "lot vetements taille M",
-    "lot vetements taille L",
-    "lot vetements taille S",
+    "ralph lauren",
+    "lacoste",
+    "tommy hilfiger",
+    "carhartt",
+    "nike vintage",
+    "adidas vintage",
 ]
 
-PRICE_MIN = 8
-PRICE_MAX = 60
+PRICE_MIN = 3
+PRICE_MAX = 15
 
 # Mots interdits — annonces ignorées si contiennent un de ces mots
 BLACKLIST = [
