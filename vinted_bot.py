@@ -11,14 +11,13 @@ from yarl import URL
 # ============================================================
 # CONFIGURATION
 # ============================================================
-
-DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
-CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0"))
+DISCORD_TOKEN  = os.environ.get("DISCORD_TOKEN", "")
+CHANNEL_ID     = int(os.environ.get("CHANNEL_ID", "1504584240451551432"))
 CHECK_INTERVAL = 10   # secondes entre chaque scan
 
 # Mots-clés à surveiller
 SEARCH_QUERIES = [
-    # Lots par marque — pepites
+
     "ralph lauren",
     "lacoste",
     "tommy hilfiger",
@@ -27,8 +26,8 @@ SEARCH_QUERIES = [
     "adidas vintage",
 ]
 
-PRICE_MIN = 3
-PRICE_MAX = 15
+PRICE_MIN = 8
+PRICE_MAX = 60
 
 # Mots interdits — annonces ignorées si contiennent un de ces mots
 BLACKLIST = [
@@ -110,41 +109,22 @@ async def search_vinted(session: aiohttp.ClientSession, query: str,
     }
     if price_min is not None: params["price_from"] = price_min
     if price_max is not None: params["price_to"]   = price_max
-    
-    all_items = []
-    
-    # Cherche dans TOUTES les catégories pour ne rater aucun lot
-    # Vinted catégories : 1=Femme, 2=Homme, 5=Enfant, sans catégorie=tout
-    for catalog_id in ["", "1", "2"]:
-        try:
-            p = params.copy()
-            if catalog_id:
-                p["catalog_ids[]"] = catalog_id
-            async with session.get(
-                f"{VINTED_API}/catalog/items",
-                params=p,
-                headers=HEADERS,
-                timeout=aiohttp.ClientTimeout(total=15)
-            ) as r:
-                if r.status == 200:
-                    data = await r.json()
-                    items = data.get("items", [])
-                    # Filtre : garde seulement les annonces qui contiennent
-                    # "lot", "vide", "pack" ou plusieurs articles dans le titre
-                    lot_keywords = ["lot", "vide", "pack", "bundle", "ensemble", "x2", "x3", "x4", "x5", "paire", "plusieurs"]
-                    for item in items:
-                        title = item.get("title", "").lower()
-                        # Si le mot-clé contient déjà "lot" on prend tout
-                        # Sinon on filtre sur les mots de lot
-                        if "lot" in query.lower() or any(k in title for k in lot_keywords):
-                            if str(item.get("id","")) not in [str(x.get("id","")) for x in all_items]:
-                                all_items.append(item)
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            print(f"[Search '{query}' cat={catalog_id}] {e}")
-    
-    print(f"[Vinted] '{query}' → {len(all_items)} lots trouvés")
-    return all_items
+    try:
+        async with session.get(
+            f"{VINTED_API}/catalog/items",
+            params=params,
+            headers=HEADERS,
+            timeout=aiohttp.ClientTimeout(total=15)
+        ) as r:
+            if r.status == 200:
+                data = await r.json()
+                items = data.get("items", [])
+                print(f"[Vinted] '{query}' → {len(items)} articles")
+                return items
+            return []
+    except Exception as e:
+        print(f"[Search '{query}'] {e}")
+        return []
 
 async def get_all_photos(session: aiohttp.ClientSession, item_id: str) -> list[str]:
     """
@@ -346,5 +326,4 @@ async def cmd_unblacklist(ctx, *, mot: str):
         await ctx.send(f"⚠️ **`{mot}`** n'est pas dans la blacklist.")
 
 if __name__ == "__main__":
-    print(f"Token chargé : {DISCORD_TOKEN[:10] if DISCORD_TOKEN else 'VIDE'}")
     bot.run(DISCORD_TOKEN)
